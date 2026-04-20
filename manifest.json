@@ -1,0 +1,22 @@
+{
+  "name": "Acute:Chronic Load Monitor",
+  "short_name": "Acute:Chronic",
+  "description": "UJR Performance Load & Fatigue Monitoring System",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07090c",
+  "theme_color": "#07090c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

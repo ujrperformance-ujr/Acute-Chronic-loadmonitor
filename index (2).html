@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acute:Chronic Load Monitor</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Acute:Chronic">
+<meta name="application-name" content="Acute:Chronic">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+#update-banner{display:none;position:fixed;bottom:0;left:0;right:0;background:#0af0a0;color:#07090c;padding:14px 20px;z-index:9999;display:none;align-items:center;justify-content:space-between;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600}
+#update-banner.show{display:flex}
+#update-banner button{background:#07090c;color:#0af0a0;border:none;padding:8px 16px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500;600&family=Nunito:wght@200;300;400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #07090c;
+  --bg2: #0d1117;
+  --bg3: #131920;
+  --bg4: #1a2230;
+  --border: #1e2a38;
+  --border2: #243344;
+  --text: #c9d8e8;
+  --text2: #6a8099;
+  --text3: #304050;
+  --accent: #0af0a0;
+  --accent2: rgba(10,240,160,0.1);
+  --accent3: rgba(10,240,160,0.06);
+  --red: #ff3d5a;
+  --red2: rgba(255,61,90,0.1);
+  --yellow: #ffc940;
+  --yellow2: rgba(255,201,64,0.1);
+  --blue: #38b6ff;
+  --blue2: rgba(56,182,255,0.1);
+  --green: #0af0a0;
+  --orange: #ff8c42;
+  --orange2: rgba(255,140,66,0.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;font-size:14px;overflow-x:hidden}
+
+/* GRID BG */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(10,240,160,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(10,240,160,0.015) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* ===== LOGIN ===== */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center}
+#login-screen.hidden{display:none}
+
+.login-card{width:400px;max-width:95vw;background:var(--bg2);border:1px solid var(--border2);padding:48px 40px;position:relative;overflow:hidden}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+
+.login-logo{font-family:'Nunito',sans-serif;font-size:32px;font-weight:300;letter-spacing:8px;text-transform:uppercase;margin-bottom:4px;color:var(--text)}
+.login-sub{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text2);margin-bottom:32px}
+.login-tabs{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border2)}
+.login-tab{flex:1;padding:10px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:none;border:none;color:var(--text3);transition:all .15s;text-align:center}
+.login-tab.active{background:var(--bg3);color:var(--accent)}
+.login-form{display:none}.login-form.active{display:block}
+.login-switch{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);margin-top:14px;text-align:center;letter-spacing:1px}
+.login-switch a{color:var(--accent);cursor:pointer;text-decoration:none}
+.login-switch a:hover{text-decoration:underline}
+
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:8px}
+.login-field input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;padding:12px 14px;outline:none;transition:border-color .15s}
+.login-field input:focus{border-color:var(--accent)}
+
+.login-btn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:8px;transition:opacity .15s}
+.login-btn:hover{opacity:.85}
+
+.login-error{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--red);margin-top:10px;letter-spacing:1px;display:none}
+.login-success{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);margin-top:10px;letter-spacing:1px;display:none}
+
+/* ===== APP ===== */
+#app{position:relative;z-index:1;display:none}
+#app.visible{display:block}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:52px;border-bottom:1px solid var(--border);background:rgba(7,9,12,.95);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+
+.nav-logo{font-family:'Nunito',sans-serif;font-size:16px;font-weight:300;letter-spacing:5px;text-transform:uppercase}
+
+.nav-center{display:flex;gap:2px}
+.nav-tab{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:7px 16px;cursor:pointer;color:var(--text2);border:1px solid transparent;background:none;transition:all .15s}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--accent);border-color:var(--border2);background:var(--bg2)}
+
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-user{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:1px}
+.logout-btn{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);background:none;border:1px solid var(--border);padding:5px 10px;cursor:pointer;transition:all .15s}
+.logout-btn:hover{color:var(--red);border-color:var(--red)}
+
+/* PAGES */
+.page{display:none;padding:28px 32px 80px;max-width:1440px;margin:0 auto;animation:fadeUp .25s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* SECTION LABEL */
+.slabel{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+
+/* ===== ROSTER PAGE ===== */
+.roster-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:28px}
+.rstat{background:var(--bg2);padding:18px 22px;text-align:center}
+.rstat-val{font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:800;line-height:1;margin-bottom:3px}
+.rstat-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text2)}
+
+.roster-wrap{overflow-x:auto;margin-bottom:32px}
+.rtbl{width:100%;border-collapse:collapse;min-width:860px}
+.rtbl thead tr{background:var(--bg2);border-bottom:1px solid var(--border2)}
+.rtbl th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);padding:10px 12px;text-align:left;font-weight:400;white-space:nowrap}
+.rtbl tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.rtbl tbody tr:hover{background:var(--bg2)}
+.rtbl tbody tr.sel{background:rgba(10,240,160,0.03);border-color:rgba(10,240,160,.2)}
+.rtbl td{padding:11px 12px;vertical-align:middle}
+
+.ath-n{font-weight:600;font-size:14px}
+.ath-d{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px}
+
+.tl{display:inline-flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 5px currentColor}
+.tl.g{color:var(--green)}.tl.g .tl-dot{background:var(--green);color:var(--green)}
+.tl.y{color:var(--yellow)}.tl.y .tl-dot{background:var(--yellow);color:var(--yellow)}
+.tl.o{color:var(--orange)}.tl.o .tl-dot{background:var(--orange);color:var(--orange)}
+.tl.r{color:var(--red)}.tl.r .tl-dot{background:var(--red);color:var(--red)}
+
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+.acwr-pill{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;padding:3px 9px;border-radius:2px;border:1px solid;display:inline-block}
+
+/* DETAIL */
+.detail-panel{display:none;margin-top:8px}
+.detail-panel.open{display:block;animation:fadeUp .25s ease}
+
+.dp-header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.dp-name{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;letter-spacing:1px;line-height:1}
+.dp-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);margin-top:5px;letter-spacing:1px}
+.close-dp{background:none;border:1px solid var(--border2);color:var(--text2);padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:all .15s}
+.close-dp:hover{border-color:var(--accent);color:var(--accent)}
+
+.pillars-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
+.pc{background:var(--bg2);border:1px solid var(--border);border-top:2px solid;padding:14px}
+.pc-lbl{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.pc-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:3px}
+.pc-st{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase}
+.pc-bar{height:2px;background:var(--border2);margin-top:8px;border-radius:1px;overflow:hidden}
+.pc-fill{height:100%;border-radius:1px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.dp-card{background:var(--bg2);border:1px solid var(--border);padding:18px 20px}
+.dp-card-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:10px}
+.acwr-big{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:800;line-height:1;margin-bottom:3px}
+.acwr-desc{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text2);letter-spacing:1px;margin-bottom:14px}
+
+.zone-wrap{margin-top:12px}
+.zone-labels{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);letter-spacing:1px;margin-bottom:3px}
+.zone-bar{height:6px;border-radius:3px;background:linear-gradient(to right,var(--yellow) 0%,var(--green) 20%,var(--green) 60%,var(--yellow) 75%,var(--red) 100%);position:relative}
+.zone-marker{position:absolute;top:-4px;width:3px;height:14px;background:white;border-radius:2px;transform:translateX(-50%);box-shadow:0 0 6px rgba(255,255,255,.7);transition:left .5s ease}
+.zone-names{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);letter-spacing:1px;margin-top:5px}
+
+.hist-wrap{display:flex;align-items:flex-end;gap:4px;height:70px;margin-top:12px}
+.hb-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.hb{width:100%;border-radius:1px 1px 0 0;min-height:2px}
+.hb-d{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);text-align:center}
+
+.rn{background:var(--bg3);border-left:2px solid var(--accent);padding:10px 14px;margin-top:10px}
+.rn-lbl{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+.rn-txt{font-size:11px;color:var(--text2);line-height:1.6;font-style:italic}
+
+.recs-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.rec-item{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;padding:14px;background:var(--bg2);border:1px solid var(--border)}
+.rec-icon{font-size:16px;line-height:1.3;flex-shrink:0}
+.rec-title{font-weight:600;font-size:13px;margin-bottom:3px}
+.rec-detail{font-size:11px;color:var(--text2);line-height:1.55}
+.rec-ref{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-top:4px;letter-spacing:.5px}
+
+/* ===== UPLOAD PAGE ===== */
+.upload-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+
+.upload-zone{background:var(--bg2);border:2px dashed var(--border2);padding:48px 32px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--accent3)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-icon{font-size:36px;margin-bottom:12px;opacity:.4}
+.uz-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.uz-sub{font-size:12px;color:var(--text2);line-height:1.6}
+.uz-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border2);padding:4px 10px;margin-top:12px;color:var(--text2)}
+
+.parse-queue{display:flex;flex-direction:column;gap:6px;margin-top:20px;max-height:320px;overflow-y:auto}
+.pq-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg3);border:1px solid var(--border)}
+.pq-name{font-size:12px;font-weight:500}
+.pq-status{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase}
+.pq-status.pending{color:var(--text3)}
+.pq-status.parsing{color:var(--yellow)}
+.pq-status.done{color:var(--green)}
+.pq-status.error{color:var(--red)}
+
+.process-btn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:16px;transition:opacity .15s}
+.process-btn:hover{opacity:.85}
+.process-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* RIGHT SIDE — MANUAL */
+.manual-card{background:var(--bg2);border:1px solid var(--border);padding:24px}
+.mc-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+
+.fg{margin-bottom:13px}
+.fg label{display:block;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:6px}
+.fg input,.fg select{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;padding:9px 11px;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+
+.fdiv{height:1px;background:var(--border);margin:16px 0;position:relative}
+.fdiv span{position:absolute;top:-8px;left:0;background:var(--bg2);font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);padding-right:10px}
+
+.sg{margin-bottom:12px}
+.sg-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.sg-name{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text2)}
+.sg-val{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--accent);line-height:1}
+input[type="range"]{-webkit-appearance:none;width:100%;height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--accent);border-radius:50%;box-shadow:0 0 6px rgba(10,240,160,.5);cursor:pointer}
+
+.sub-btn{width:100%;background:var(--bg3);color:var(--accent);border:1px solid var(--accent);padding:12px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:6px;transition:all .15s}
+.sub-btn:hover{background:var(--accent);color:var(--bg)}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--accent);padding:14px 20px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{border-left-color:var(--red)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:60px 20px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:1px;line-height:2}
+
+@media(max-width:900px){
+  .upload-layout{grid-template-columns:1fr}
+  .pillars-row{grid-template-columns:repeat(3,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .roster-stats{grid-template-columns:repeat(2,1fr)}
+  .page{padding:20px 16px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">UJR</div>
+    <div class="login-sub">Performance · Load & Fatigue Monitor</div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="login-tab" id="tab-signup" onclick="switchAuthTab('signup')">Create Account</button>
+    </div>
+
+    <!-- SIGN IN -->
+    <div class="login-form active" id="form-signin">
+      <div class="login-field">
+        <label>Email</label>
+        <input type="email" id="l-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="login-btn" id="login-btn-si" onclick="doLogin()">Sign In →</button>
+      <div class="login-error" id="l-err">Incorrect email or password.</div>
+    </div>
+
+    <!-- CREATE ACCOUNT -->
+    <div class="login-form" id="form-signup">
+      <div class="login-field">
+        <label>Full Name</label>
+        <input type="text" id="r-name" placeholder="Your name" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <div class="login-field">
+        <label>Email</label>
+        <input type="email" id="r-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="r-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <div class="login-field">
+        <label>Confirm Password</label>
+        <input type="password" id="r-pass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <button class="login-btn" id="login-btn-su" onclick="doSignup()">Create Account →</button>
+      <div class="login-error" id="r-err">—</div>
+      <div class="login-success" id="r-ok">Account created! You can now sign in.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <nav>
+    <div class="nav-logo">UJR</div>
+    <div class="nav-center">
+      <button class="nav-tab active" onclick="showPage('roster',this)">Roster</button>
+      <button class="nav-tab" onclick="showPage('upload',this)">Upload / Log</button>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user">—</span>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- ROSTER -->
+  <div class="page active" id="page-roster">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="slabel">// Roster Overview</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3)" id="roster-date">—</div>
+    </div>
+
+    <div class="roster-stats">
+      <div class="rstat"><div class="rstat-val" id="s-total" style="color:var(--accent)">0</div><div class="rstat-lbl">Athletes</div></div>
+      <div class="rstat"><div class="rstat-val" id="s-red" style="color:var(--red)">0</div><div class="rstat-lbl">High Alert</div></div>
+      <div class="rstat"><div class="rstat-val" id="s-yellow" style="color:var(--yellow)">0</div><div class="rstat-lbl">Caution</div></div>
+      <div class="rstat"><div class="rstat-val" id="s-green" style="color:var(--green)">0</div><div class="rstat-lbl">Ready</div></div>
+    </div>
+
+    <div class="roster-wrap">
+      <table class="rtbl">
+        <thead>
+          <tr>
+            <th>Athlete</th>
+            <th>Sleep Q</th>
+            <th>Fatigue</th>
+            <th>Mood</th>
+            <th>Recovery</th>
+            <th>SRI</th>
+            <th>sRPE Load</th>
+            <th>A:C Ratio</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="roster-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="detail-panel" id="detail-panel">
+      <div class="slabel">// Athlete Detail</div>
+      <div class="dp-header">
+        <div>
+          <div class="dp-name" id="dp-name">—</div>
+          <div class="dp-meta" id="dp-meta">—</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="tl" id="dp-tl"><div class="tl-dot"></div><span>—</span></div>
+          <button class="close-dp" onclick="closeDetail()">✕ Close</button>
+        </div>
+      </div>
+
+      <div class="slabel">// Wellness Pillars</div>
+      <div class="pillars-row" id="dp-pillars"></div>
+
+      <div class="slabel">// Acute:Chronic Workload</div>
+      <div class="two-col">
+        <div class="dp-card">
+          <div class="dp-card-lbl">A:C Ratio (7-day acute / 28-day chronic)</div>
+          <div class="acwr-big" id="dp-acwr">—</div>
+          <div class="acwr-desc" id="dp-acwr-desc">—</div>
+          <div class="zone-wrap">
+            <div class="zone-labels"><span>0.5</span><span>0.8</span><span>1.3</span><span>1.5</span><span>2.0</span></div>
+            <div class="zone-bar"><div class="zone-marker" id="dp-marker" style="left:0%"></div></div>
+            <div class="zone-names"><span>UNDER</span><span style="margin-left:12%">OPTIMAL</span><span style="margin-left:18%">CAUTION</span><span style="margin-left:2%">HIGH RISK</span></div>
+          </div>
+          <div class="rn" style="margin-top:14px">
+            <div class="rn-lbl">Research</div>
+            <div class="rn-txt">Hulin et al. (2016) — ACWR 0.8–1.3 = lowest injury risk. &gt;1.5 = 2–4× higher injury likelihood. Gabbett (2016) Br J Sports Med.</div>
+          </div>
+        </div>
+        <div class="dp-card">
+          <div class="dp-card-lbl">28-Day sRPE Load History</div>
+          <div class="hist-wrap" id="dp-hist"></div>
+          <div class="rn" style="margin-top:10px">
+            <div class="rn-lbl">sRPE Method</div>
+            <div class="rn-txt">Foster et al. (2001) — RPE (0–10) × duration (min) = session load in AU. Acute = mean 7-day. Chronic = mean 28-day.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slabel">// Recommendations</div>
+      <div class="recs-list" id="dp-recs"></div>
+    </div>
+  </div>
+
+  <!-- UPLOAD / LOG -->
+  <div class="page" id="page-upload">
+    <div class="slabel" style="margin-bottom:20px">// Upload PDF Exports or Manual Entry</div>
+    <div class="upload-layout">
+
+      <!-- PDF BATCH -->
+      <div>
+        <!-- INPUT METHOD TABS -->
+        <div style="display:flex;gap:2px;margin-bottom:16px">
+          <button class="nav-tab active" id="input-tab-pdf" onclick="switchInputTab('pdf')" style="flex:1;font-size:11px">PDF Upload</button>
+          <button class="nav-tab" id="input-tab-paste" onclick="switchInputTab('paste')" style="flex:1;font-size:11px">Paste Text</button>
+        </div>
+
+        <!-- PDF UPLOAD -->
+        <div id="input-pdf">
+          <div class="slabel">// Batch PDF Upload (Everfit Exports)</div>
+          <div class="upload-zone" id="drop-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)">
+            <input type="file" accept=".pdf" multiple onchange="handleFiles(this.files)" id="pdf-input">
+            <div class="uz-icon">⬆</div>
+            <div class="uz-title">Drop PDFs Here</div>
+            <div class="uz-sub">Drag & drop multiple Everfit PDF exports<br>or click to browse files</div>
+            <div class="uz-badge">AI-powered visual parser — reads filled boxes accurately</div>
+          </div>
+          <div class="parse-queue" id="parse-queue"></div>
+          <button class="process-btn" id="process-btn" onclick="processQueue()" disabled>Process PDFs →</button>
+          <div class="rn" style="margin-top:16px">
+            <div class="rn-lbl">How it works</div>
+            <div class="rn-txt">Upload one or many PDFs. Claude AI reads the filled boxes visually — accurate even when Everfit's text encoding is garbled. Batch process multiple athletes at once.</div>
+          </div>
+        </div>
+
+        <!-- PASTE TEXT -->
+        <div id="input-paste" style="display:none">
+          <div class="slabel">// Paste Everfit Export Text</div>
+          <div class="manual-card" style="padding:20px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">How to get this: In Everfit, open the athlete's form response → tap the three dots → Copy or Share as text → paste below</div>
+            <div class="fg">
+              <label>Athlete Name (override if needed)</label>
+              <input type="text" id="paste-ath" placeholder="Auto-detected from text">
+            </div>
+            <div class="fg">
+              <label>Date (override if needed)</label>
+              <input type="date" id="paste-date">
+            </div>
+            <div class="fg">
+              <label>Paste Everfit Response Text</label>
+              <textarea id="paste-text" placeholder="Paste the full Everfit form response here..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;padding:10px 12px;outline:none;min-height:180px;resize:vertical;transition:border-color .15s" oninput="this.style.borderColor='var(--border2)'"></textarea>
+            </div>
+            <button class="process-btn" onclick="processPaste()" style="margin-top:8px">Parse & Save →</button>
+            <div class="rn" style="margin-top:12px">
+              <div class="rn-lbl">Paste format</div>
+              <div class="rn-txt">Works with any Everfit text export. The parser finds the athlete name, date, and all 10 question scores automatically. Questions not answered default to neutral (5).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL -->
+      <div>
+        <div class="slabel">// Single Manual Entry</div>
+        <div class="manual-card">
+          <div class="mc-title">Manual Log</div>
+          <div class="fg"><label>Athlete Name</label><input type="text" id="m-ath" placeholder="e.g. Marcus Johnson" list="ath-dl"><datalist id="ath-dl"></datalist></div>
+          <div class="fg"><label>Date</label><input type="date" id="m-date"></div>
+
+          <div class="fdiv"><span>PILLAR 1 — SLEEP</span></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Sleep Quality</span><span class="sg-val" id="mv-sq">5</span></div><input type="range" min="0" max="10" value="5" id="ms-sq" oninput="msv('sq')"></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Sleep Adequacy</span><span class="sg-val" id="mv-sa">5</span></div><input type="range" min="0" max="10" value="5" id="ms-sa" oninput="msv('sa')"></div>
+          <div class="fg"><label>Sleep Hours</label><input type="number" id="m-slhr" min="0" max="14" step="0.5" placeholder="e.g. 7.5"></div>
+
+          <div class="fdiv"><span>PILLAR 2 — FATIGUE</span></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">General Fatigue</span><span class="sg-val" id="mv-fat">5</span></div><input type="range" min="0" max="10" value="5" id="ms-fat" oninput="msv('fat')"></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Lower-body Soreness</span><span class="sg-val" id="mv-sor">5</span></div><input type="range" min="0" max="10" value="5" id="ms-sor" oninput="msv('sor')"></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Joint Discomfort</span><span class="sg-val" id="mv-jnt">1</span></div><input type="range" min="0" max="10" value="1" id="ms-jnt" oninput="msv('jnt')"></div>
+
+          <div class="fdiv"><span>PILLAR 3 — MOOD</span></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Mood / Emotional State</span><span class="sg-val" id="mv-mood">5</span></div><input type="range" min="0" max="10" value="5" id="ms-mood" oninput="msv('mood')"></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Motivation to Train</span><span class="sg-val" id="mv-mot">5</span></div><input type="range" min="0" max="10" value="5" id="ms-mot" oninput="msv('mot')"></div>
+
+          <div class="fdiv"><span>PILLAR 4 — STRESS & RECOVERY</span></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Non-Training Stress</span><span class="sg-val" id="mv-str">5</span></div><input type="range" min="0" max="10" value="5" id="ms-str" oninput="msv('str')"></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Overall Recovery</span><span class="sg-val" id="mv-rec">5</span></div><input type="range" min="0" max="10" value="5" id="ms-rec" oninput="msv('rec')"></div>
+
+          <div class="fdiv"><span>PILLAR 5 — SRI</span></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Game/Practice Readiness</span><span class="sg-val" id="mv-sri">5</span></div><input type="range" min="0" max="10" value="5" id="ms-sri" oninput="msv('sri')"></div>
+
+          <div class="fdiv"><span>SESSION LOAD</span></div>
+          <div class="sg"><div class="sg-row"><span class="sg-name">Session RPE (0–10)</span><span class="sg-val" id="mv-rpe">5</span></div><input type="range" min="0" max="10" value="5" id="ms-rpe" oninput="msv('rpe')"></div>
+          <div class="fg"><label>Session Duration (minutes)</label><input type="number" id="m-dur" min="0" max="300" placeholder="e.g. 90"></div>
+          <div class="fg"><label>Notes</label><input type="text" id="m-notes" placeholder="Pain, symptoms, travel..."></div>
+
+          <button class="sub-btn" onclick="manualSubmit()">Save Entry →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== SUPABASE CONFIG =====
+const SUPABASE_URL = 'https://bwtycdrcvklbltavjbhn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3dHljZHJjdmtsYmx0YXZqYmhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MTEwMzQsImV4cCI6MjA5MjI4NzAzNH0.9iN7KRa0x16RO0_jh54l3BhG-buJCs-qos8meds549A';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== PDF.JS WORKER =====
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ===== STATE =====
+let currentUser = null;
+let entries = [];
+let pdfQueue = [];
+
+// ===== AUTH =====
+function switchAuthTab(tab) {
+  document.getElementById('tab-signin').classList.toggle('active', tab==='signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('form-signin').classList.toggle('active', tab==='signin');
+  document.getElementById('form-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('l-err').style.display='none';
+  document.getElementById('r-err').style.display='none';
+  document.getElementById('r-ok').style.display='none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim().toLowerCase();
+  const pass = document.getElementById('l-pass').value;
+  if (!email||!pass) { showAuthErr('l-err','Please enter email and password.'); return; }
+
+  setLoading('login-btn-si', true, 'Signing in...');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  setLoading('login-btn-si', false, 'Sign In →');
+
+  if (error) { showAuthErr('l-err', error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message); return; }
+  loginSuccess(data.user);
+}
+
+async function doSignup() {
+  const name = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim().toLowerCase();
+  const pass = document.getElementById('r-pass').value;
+  const pass2 = document.getElementById('r-pass2').value;
+
+  if (!name) { showAuthErr('r-err','Please enter your name.'); return; }
+  if (!email||!email.includes('@')) { showAuthErr('r-err','Please enter a valid email.'); return; }
+  if (pass.length < 6) { showAuthErr('r-err','Password must be at least 6 characters.'); return; }
+  if (pass !== pass2) { showAuthErr('r-err','Passwords do not match.'); return; }
+
+  setLoading('login-btn-su', true, 'Creating account...');
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { name } }
+  });
+  setLoading('login-btn-su', false, 'Create Account →');
+
+  if (error) { showAuthErr('r-err', error.message); return; }
+
+  document.getElementById('r-err').style.display='none';
+  const ok = document.getElementById('r-ok');
+  ok.style.display='block';
+  ok.textContent = `Account created for ${name}! Check your email to confirm, then sign in.`;
+  setTimeout(() => { switchAuthTab('signin'); document.getElementById('l-email').value=email; }, 2500);
+}
+
+function showAuthErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function setLoading(btnId, loading, text) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.textContent = text;
+  btn.disabled = loading;
+  btn.style.opacity = loading ? '0.6' : '1';
+}
+
+function loginSuccess(user) {
+  currentUser = user;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  const name = user.user_metadata?.name || user.email.split('@')[0];
+  document.getElementById('nav-user').textContent = name.toUpperCase();
+  init();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  entries = [];
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('l-email').value='';
+  document.getElementById('l-pass').value='';
+  document.getElementById('l-err').style.display='none';
+  closeDetail();
+}
+
+// ===== DATA — SUPABASE =====
+async function loadEntries() {
+  if (!currentUser) return;
+  const { data, error } = await sb
+    .from('entries')
+    .select('*')
+    .eq('user_email', currentUser.email)
+    .order('date', { ascending: false });
+
+  if (error) { console.error('Load error:', error); entries = []; return; }
+  entries = data || [];
+}
+
+async function saveEntry(e) {
+  if (!currentUser) return false;
+  const row = {
+    user_email: currentUser.email,
+    ath: e.ath, date: e.date,
+    sq: e.sq??null, sa: e.sa??null, fat: e.fat??null,
+    sor: e.sor??null, jnt: e.jnt??null, mood: e.mood??null,
+    mot: e.mot??null, str: e.str??null, rec: e.rec??null,
+    sri: e.sri??null, slhr: e.slhr??null,
+    rpe: e.rpe??null, dur: e.dur??null,
+    notes: e.notes||null, source: e.source||'manual'
+  };
+
+  // Upsert by user_email + ath + date
+  const { error } = await sb.from('entries')
+    .upsert(row, { onConflict: 'user_email,ath,date', ignoreDuplicates: false });
+
+  if (error) { console.error('Save error:', error); toast('Error saving entry', true); return false; }
+  return true;
+}
+
+async function deleteAthleteEntries(name) {
+  if (!currentUser) return;
+  const { error } = await sb.from('entries')
+    .delete()
+    .eq('user_email', currentUser.email)
+    .eq('ath', name);
+  if (error) { console.error('Delete error:', error); toast('Error deleting', true); return; }
+}
+
+// ===== INIT =====
+async function init() {
+  const now = new Date();
+  document.getElementById('roster-date').textContent = 'AS OF ' + now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+  document.getElementById('m-date').value = now.toISOString().split('T')[0];
+  showLoadingRoster();
+  await loadEntries();
+  renderRoster();
+  updateDatalist();
+}
+
+function showLoadingRoster() {
+  document.getElementById('roster-tbody').innerHTML = `<tr><td colspan="10"><div class="empty-state">Loading roster...</div></td></tr>`;
+}
+
+// ===== PAGE NAV =====
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ===== SCORING =====
+function score(e) {
+  const p1 = ((e.sq||5)+(e.sa||5))/2;
+  const p2 = (10-(e.fat||5)+(10-(e.sor||5))+(10-(e.jnt||0)))/3;
+  const p3 = ((e.mood||5)+(e.mot||5))/2;
+  const p4 = ((10-(e.str||5))+(e.rec||5))/2;
+  const p5 = e.sri||5;
+  const readiness = p1*.15+p2*.25+p3*.2+p4*.2+p5*.2;
+  return {p1,p2,p3,p4,p5,readiness};
+}
+
+function tl(r) {
+  if (r>=7.5) return {cls:'g',label:'READY',color:'var(--green)'};
+  if (r>=6.0) return {cls:'y',label:'CAUTION',color:'var(--yellow)'};
+  if (r>=4.5) return {cls:'o',label:'MODIFIED',color:'var(--orange)'};
+  return {cls:'r',label:'HIGH ALERT',color:'var(--red)'};
+}
+
+function pColor(v) {
+  if (v>=7.5) return {c:'var(--green)',bg:'rgba(10,240,160,0.08)'};
+  if (v>=5.5) return {c:'var(--yellow)',bg:'rgba(255,201,64,0.08)'};
+  return {c:'var(--red)',bg:'rgba(255,61,90,0.08)'};
+}
+
+function acwr(name, date) {
+  const all = entries.filter(e=>e.ath===name);
+  const ref = new Date(date+'T12:00:00');
+  const daily = [];
+  for (let i=27;i>=0;i--) {
+    const d = new Date(ref); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split('T')[0];
+    const dayLoad = all.filter(e=>e.date===ds).reduce((s,e)=>s+((e.rpe||0)*(e.dur||0)),0);
+    daily.push({date:ds,load:dayLoad});
+  }
+  const acute = daily.slice(-7).reduce((s,d)=>s+d.load,0)/7;
+  const chronic = daily.reduce((s,d)=>s+d.load,0)/28;
+  const ratio = chronic>0 ? +(acute/chronic).toFixed(2) : null;
+  return {ratio,acute:Math.round(acute),chronic:Math.round(chronic),daily};
+}
+
+function acwrZone(r) {
+  if (r===null) return {label:'Insufficient load data',color:'var(--text2)'};
+  if (r<0.8) return {label:'Under-trained — increase load gradually',color:'var(--yellow)'};
+  if (r<=1.3) return {label:'Optimal zone — maintain load',color:'var(--green)'};
+  if (r<=1.5) return {label:'Caution — monitor closely',color:'var(--yellow)'};
+  return {label:'HIGH RISK — reduce load immediately',color:'var(--red)'};
+}
+
+function markerPct(r) {
+  if (!r) return 0;
+  return Math.min(100,Math.max(0,((r-0.5)/1.5)*100));
+}
+
+// ===== RENDER ROSTER =====
+function renderRoster() {
+  const latest = {};
+  entries.forEach(e=>{if(!latest[e.ath]||e.date>latest[e.ath].date) latest[e.ath]=e;});
+  const list = Object.values(latest);
+
+  let red=0,yel=0,grn=0;
+  list.forEach(e=>{
+    const s=score(e),t=tl(s.readiness);
+    if(t.cls==='r'||t.cls==='o') red++;
+    else if(t.cls==='y') yel++;
+    else grn++;
+  });
+  document.getElementById('s-total').textContent=list.length;
+  document.getElementById('s-red').textContent=red;
+  document.getElementById('s-yellow').textContent=yel;
+  document.getElementById('s-green').textContent=grn;
+
+  const tbody = document.getElementById('roster-tbody');
+  if (!list.length) {
+    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state">No athlete data yet.<br>Go to Upload / Log to add entries.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.sort((a,b)=>a.ath.localeCompare(b.ath)).map(e=>{
+    const s=score(e),t=tl(s.readiness);
+    const aw=acwr(e.ath,e.date);
+    const acColor=aw.ratio===null?'var(--text3)':(aw.ratio>=0.8&&aw.ratio<=1.3)?'var(--green)':(aw.ratio<=1.5)?'var(--yellow)':'var(--red)';
+    const load=(e.rpe||0)*(e.dur||0);
+    return `<tr onclick="selectAth('${e.ath.replace(/'/g,"\\'")}')">
+      <td><div class="ath-n">${e.ath}</div><div class="ath-d">${e.date}</div></td>
+      <td><span class="mono" style="color:${(e.sq||5)>=7?'var(--green)':(e.sq||5)>=5?'var(--yellow)':'var(--red)'}">${e.sq??'—'}</span></td>
+      <td><span class="mono" style="color:${(e.fat||5)<=4?'var(--green)':(e.fat||5)<=7?'var(--yellow)':'var(--red)'}">${e.fat??'—'}</span></td>
+      <td><span class="mono" style="color:${(e.mood||5)>=7?'var(--green)':(e.mood||5)>=5?'var(--yellow)':'var(--red)'}">${e.mood??'—'}</span></td>
+      <td><span class="mono" style="color:${(e.rec||5)>=7?'var(--green)':(e.rec||5)>=5?'var(--yellow)':'var(--red)'}">${e.rec??'—'}</span></td>
+      <td><span style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:${t.color}">${e.sri??'—'}</span></td>
+      <td><span class="mono" style="color:var(--text2)">${load>0?load+' AU':'—'}</span></td>
+      <td><span class="acwr-pill" style="color:${acColor};border-color:${acColor}">${aw.ratio??'—'}</span></td>
+      <td><div class="tl ${t.cls}"><div class="tl-dot"></div>${t.label}</div></td>
+      <td><button onclick="event.stopPropagation();deleteAth('${e.ath.replace(/'/g,"\\'")}',event)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:4px 6px" title="Delete">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteAth(name) {
+  if (!confirm(`Delete ALL entries for ${name}?`)) return;
+  await deleteAthleteEntries(name);
+  await loadEntries();
+  closeDetail();
+  renderRoster();
+  updateDatalist();
+  toast('Deleted: '+name);
+}
+
+// ===== DETAIL =====
+function selectAth(name) {
+  const e = entries.filter(x=>x.ath===name).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if (!e) return;
+  document.querySelectorAll('.rtbl tbody tr').forEach(r=>r.classList.remove('sel'));
+  event.currentTarget?.classList.add('sel');
+  document.getElementById('dp-name').textContent=e.ath;
+  const s=score(e),t=tl(s.readiness);
+  const load=(e.rpe||0)*(e.dur||0);
+  document.getElementById('dp-meta').textContent=`DATE: ${e.date}  ·  SRI: ${e.sri??'—'}/10  ·  READINESS: ${s.readiness.toFixed(1)}/10  ·  SESSION LOAD: ${load>0?load+' AU':'no session logged'}`;
+  const tlEl=document.getElementById('dp-tl');
+  tlEl.className='tl '+t.cls;
+  tlEl.innerHTML=`<div class="tl-dot"></div>${t.label}`;
+
+  const pillarDefs=[
+    {label:'Sleep Quality & Adequacy',key:'p1',bc:'var(--blue)'},
+    {label:'Fatigue & Soreness',key:'p2',bc:'var(--red)'},
+    {label:'Mood & Motivation',key:'p3',bc:'var(--green)'},
+    {label:'Stress & Recovery',key:'p4',bc:'var(--yellow)'},
+    {label:'Subjective Readiness',key:'p5',bc:'var(--orange)'},
+  ];
+  document.getElementById('dp-pillars').innerHTML=pillarDefs.map(p=>{
+    const v=s[p.key],c=pColor(v),st=v>=7.5?'Optimal':v>=5.5?'Moderate':'Impaired';
+    return `<div class="pc" style="border-top-color:${p.bc}">
+      <div class="pc-lbl">${p.label}</div>
+      <div class="pc-val" style="color:${c.c}">${v.toFixed(1)}</div>
+      <div class="pc-st" style="color:${c.c}">${st}</div>
+      <div class="pc-bar"><div class="pc-fill" style="width:${v*10}%;background:${c.c}"></div></div>
+    </div>`;
+  }).join('');
+
+  const aw=acwr(e.ath,e.date),az=acwrZone(aw.ratio);
+  document.getElementById('dp-acwr').textContent=aw.ratio??'—';
+  document.getElementById('dp-acwr').style.color=az.color;
+  document.getElementById('dp-acwr-desc').textContent=`ACUTE: ${aw.acute} AU/day  ·  CHRONIC: ${aw.chronic} AU/day  ·  ${az.label.toUpperCase()}`;
+  document.getElementById('dp-acwr-desc').style.color=az.color;
+  document.getElementById('dp-marker').style.left=markerPct(aw.ratio)+'%';
+
+  const hist14=aw.daily.slice(-14),maxL=Math.max(...hist14.map(d=>d.load),1);
+  document.getElementById('dp-hist').innerHTML=hist14.map((d,i)=>{
+    const pct=(d.load/maxL)*100,isAcute=i>=7;
+    const dayL=new Date(d.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'narrow'});
+    return `<div class="hb-wrap"><div class="hb" style="height:${Math.max(pct,2)}%;background:${isAcute?'var(--accent)':'var(--border2)'}"></div><div class="hb-d">${dayL}</div></div>`;
+  }).join('');
+
+  renderRecs(e,s,aw,az);
+  const dp=document.getElementById('detail-panel');
+  dp.classList.add('open');
+  setTimeout(()=>dp.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.rtbl tbody tr').forEach(r=>r.classList.remove('sel'));
+}
+
+function renderRecs(e,s,aw,az) {
+  const recs=[];
+  if (aw.ratio!==null) {
+    if (aw.ratio>1.5) recs.push({icon:'⚠',color:'var(--red)',title:'Reduce load immediately',detail:`A:C ratio ${aw.ratio} exceeds 1.5 injury risk threshold. Cut session volume 20–30%.`,ref:'Hulin et al. (2016); Gabbett (2016) — Br J Sports Med'});
+    else if (aw.ratio<0.8) recs.push({icon:'↑',color:'var(--yellow)',title:'Progressive load increase indicated',detail:`A:C ratio ${aw.ratio} signals under-training. Safe to increase 10% per week.`,ref:'Blanch & Gabbett (2016) — Br J Sports Med'});
+    else recs.push({icon:'✓',color:'var(--green)',title:'Workload in optimal zone',detail:`A:C ratio ${aw.ratio} within the 0.8–1.3 sweet spot. Maintain current load.`,ref:'Hulin et al. (2016) — Br J Sports Med'});
+  } else {
+    recs.push({icon:'◎',color:'var(--text2)',title:'Log sessions to activate A:C monitoring',detail:'Need 7+ days of session RPE × duration data to compute acute load.',ref:'Foster et al. (2001) — J Strength Cond Res'});
+  }
+  if ((e.sq||5)<=4) recs.push({icon:'💤',color:'var(--yellow)',title:'Sleep deficit — avoid high CNS load today',detail:`Sleep quality ${e.sq??'—'}/10. Sleep restriction impairs force output and injury resistance.`,ref:'Watson (2017) — Curr Sports Med Rep'});
+  if ((e.fat||5)>=8||(e.sor||5)>=8) recs.push({icon:'↓',color:'var(--orange)',title:'High neuromuscular fatigue — modify session',detail:`Fatigue ${e.fat??'—'}/10, soreness ${e.sor??'—'}/10. Low-load technical work only.`,ref:'Twist & Highton (2013) — Int J Sports Physiol Perform'});
+  if ((e.jnt||0)>=6) recs.push({icon:'🦴',color:'var(--red)',title:'Joint discomfort flagged — assess before loading',detail:`Joint discomfort ${e.jnt}/10. Clinical assessment before impact or heavy load.`,ref:'UJR Performance Clinical Protocol'});
+  if (s.p3<5) recs.push({icon:'↗',color:'var(--blue)',title:'Low psychological readiness',detail:'Mood and motivation impaired. Alters perceived exertion and training tolerance.',ref:'Pageaux (2016) — Eur J Sport Sci'});
+  if ((e.str||5)>=8) recs.push({icon:'⚡',color:'var(--yellow)',title:'High life stress load',detail:`Non-training stress ${e.str}/10. Reduces physiological recovery capacity.`,ref:'Saw et al. (2016) — Sports Med'});
+  if ((e.sri||5)<=3) recs.push({icon:'!',color:'var(--red)',title:'Athlete self-reports very low readiness',detail:`SRI ${e.sri}/10. Subjective readiness independently predicts injury risk.`,ref:'Haddad et al. (2017) — Int J Sports Physiol Perform'});
+
+  document.getElementById('dp-recs').innerHTML=recs.map(r=>
+    `<div class="rec-item"><div class="rec-icon" style="color:${r.color}">${r.icon}</div><div><div class="rec-title">${r.title}</div><div class="rec-detail">${r.detail}</div><div class="rec-ref">Ref: ${r.ref}</div></div></div>`
+  ).join('');
+}
+
+// ===== INPUT TAB SWITCHER =====
+function switchInputTab(tab) {
+  document.getElementById('input-tab-pdf').classList.toggle('active', tab==='pdf');
+  document.getElementById('input-tab-paste').classList.toggle('active', tab==='paste');
+  document.getElementById('input-pdf').style.display = tab==='pdf' ? 'block' : 'none';
+  document.getElementById('input-paste').style.display = tab==='paste' ? 'block' : 'none';
+}
+
+// ===== PDF PARSING — AI VISUAL =====
+function handleDrag(e,over) { e.preventDefault(); document.getElementById('drop-zone').classList.toggle('drag',over); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); handleFiles(e.dataTransfer.files); }
+
+function handleFiles(files) {
+  Array.from(files).filter(f=>f.name.endsWith('.pdf')).forEach(f=>{
+    if (pdfQueue.find(q=>q.name===f.name)) return;
+    pdfQueue.push({name:f.name,file:f,status:'pending'});
+  });
+  renderQueue();
+  document.getElementById('process-btn').disabled=pdfQueue.filter(q=>q.status==='pending').length===0;
+}
+
+function renderQueue() {
+  const el=document.getElementById('parse-queue');
+  if (!pdfQueue.length) { el.innerHTML=''; return; }
+  el.innerHTML=pdfQueue.map(q=>`<div class="pq-item"><span class="pq-name">${q.name}</span><span class="pq-status ${q.status}">${q.status.toUpperCase()}${q.result?' — '+q.result:''}</span></div>`).join('');
+}
+
+async function processQueue() {
+  const pending=pdfQueue.filter(q=>q.status==='pending');
+  if (!pending.length) return;
+  document.getElementById('process-btn').disabled=true;
+
+  for (const item of pending) {
+    item.status='parsing'; renderQueue();
+    try {
+      const parsed = await parsePDFWithAI(item.file);
+      if (parsed) {
+        const ok = await saveEntry(parsed);
+        if (ok) { item.status='done'; item.result=parsed.ath+' · '+parsed.date; }
+        else { item.status='error'; item.result='Save failed'; }
+      } else { item.status='error'; item.result='Could not parse'; }
+    } catch(err) { item.status='error'; item.result='Parse error: '+err.message; console.error(err); }
+    renderQueue();
+  }
+
+  await loadEntries();
+  renderRoster();
+  updateDatalist();
+  toast(`Processed ${pending.length} PDF${pending.length>1?'s':''}`);
+  pdfQueue=pdfQueue.filter(q=>q.status!=='done');
+  setTimeout(renderQueue,1500);
+}
+
+async function parsePDFWithAI(file) {
+  // Convert PDF pages to images using PDF.js, then send to Claude API
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+
+  // Render both pages to canvas and convert to base64
+  const pageImages = [];
+  for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({scale: 1.5});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({canvasContext: ctx, viewport}).promise;
+    pageImages.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+  }
+
+  // Send to Claude API for visual extraction
+  const prompt = `This is an Everfit Daily Fatigue Tracker form. Extract the following information exactly:
+
+1. Athlete name (top right corner)
+2. Date (top right, format M/D/YYYY)
+3. The SELECTED/FILLED value for each question (the darkened/highlighted box):
+   Q1: Sleep Quality (0-10)
+   Q2: Sleep Perceived Adequacy (0-10)
+   Q3: General Fatigue RIGHT NOW (0-10)
+   Q4: Lower-body Muscle Soreness/DOMS (0-10)
+   Q5: Joint discomfort/stiffness (0-10)
+   Q6: Mood/emotional state (0-10)
+   Q7: Motivation to train today (0-10)
+   Q8: Non-training stress load (0-10)
+   Q9: Overall recovery (0-10)
+   Q10: Game/practice readiness SRI (0-10)
+   Notes: any text in the notes field (or "none")
+
+The selected value is the box that appears FILLED/DARK/HIGHLIGHTED compared to empty boxes.
+
+Respond ONLY with valid JSON, no other text:
+{"name":"...","date":"MM/DD/YYYY","q1":0,"q2":0,"q3":0,"q4":0,"q5":0,"q6":0,"q7":0,"q8":0,"q9":0,"q10":0,"notes":""}`;
+
+  const messages = [{
+    role: 'user',
+    content: [
+      ...pageImages.map(img => ({
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/jpeg', data: img }
+      })),
+      { type: 'text', text: prompt }
+    ]
+  }];
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      messages
+    })
+  });
+
+  const data = await response.json();
+  const text = data.content?.[0]?.text || '';
+
+  // Parse JSON response
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('No JSON in response');
+  const r = JSON.parse(jsonMatch[0]);
+
+  // Convert date to YYYY-MM-DD
+  let date = new Date().toISOString().split('T')[0];
+  if (r.date) {
+    const parts = r.date.split('/');
+    if (parts.length === 3) {
+      date = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+    }
+  }
+
+  return {
+    ath: r.name || 'Unknown',
+    date,
+    sq: r.q1 ?? 5, sa: r.q2 ?? 5,
+    fat: r.q3 ?? 5, sor: r.q4 ?? 5, jnt: r.q5 ?? 0,
+    mood: r.q6 ?? 5, mot: r.q7 ?? 5,
+    str: r.q8 ?? 5, rec: r.q9 ?? 5, sri: r.q10 ?? 5,
+    slhr: null, notes: r.notes && r.notes !== 'none' ? r.notes : '',
+    rpe: 0, dur: 0, source: 'pdf'
+  };
+}
+
+// ===== PASTE PARSER =====
+async function processPaste() {
+  const text = document.getElementById('paste-text').value.trim();
+  if (!text) { toast('Please paste text first', true); return; }
+
+  const btn = document.querySelector('#input-paste .process-btn');
+  btn.textContent = 'Parsing...'; btn.disabled = true;
+
+  try {
+    const parsed = await parseTextWithAI(text);
+    if (!parsed) { toast('Could not parse text', true); btn.textContent='Parse & Save →'; btn.disabled=false; return; }
+
+    // Allow name/date override
+    const nameOverride = document.getElementById('paste-ath').value.trim();
+    const dateOverride = document.getElementById('paste-date').value;
+    if (nameOverride) parsed.ath = nameOverride;
+    if (dateOverride) parsed.date = dateOverride;
+
+    const ok = await saveEntry(parsed);
+    if (ok) {
+      await loadEntries();
+      renderRoster();
+      updateDatalist();
+      toast('Saved: ' + parsed.ath + ' · ' + parsed.date);
+      document.getElementById('paste-text').value = '';
+      document.getElementById('paste-ath').value = '';
+    }
+  } catch(err) {
+    toast('Parse error: ' + err.message, true);
+    console.error(err);
+  }
+
+  btn.textContent = 'Parse & Save →'; btn.disabled = false;
+}
+
+async function parseTextWithAI(text) {
+  const prompt = `This is text from an Everfit Daily Fatigue Tracker form export. Extract the following:
+
+1. Athlete name
+2. Date (format MM/DD/YYYY)
+3. The selected value (0-10) for each question. The selected value is the number that was chosen — it may appear highlighted, bold, or just as an isolated number after the scale.
+
+Questions:
+Q1: Sleep Quality
+Q2: Sleep Perceived Adequacy / sleep duration adequacy
+Q3: General Fatigue RIGHT NOW
+Q4: Lower-body Muscle Soreness / DOMS
+Q5: Joint discomfort / stiffness
+Q6: Mood / emotional state
+Q7: Motivation to train today
+Q8: Non-training stress load
+Q9: Overall recovery
+Q10: Game/practice readiness (SRI)
+Notes: any notes text (or "none")
+
+Form text:
+${text.substring(0, 3000)}
+
+Respond ONLY with valid JSON:
+{"name":"...","date":"MM/DD/YYYY","q1":0,"q2":0,"q3":0,"q4":0,"q5":0,"q6":0,"q7":0,"q8":0,"q9":0,"q10":0,"notes":""}`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  const data = await response.json();
+  const txt = data.content?.[0]?.text || '';
+  const jsonMatch = txt.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  const r = JSON.parse(jsonMatch[0]);
+
+  let date = new Date().toISOString().split('T')[0];
+  if (r.date) {
+    const parts = r.date.split('/');
+    if (parts.length === 3) date = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+  }
+
+  return {
+    ath: r.name || 'Unknown', date,
+    sq: r.q1??5, sa: r.q2??5, fat: r.q3??5, sor: r.q4??5, jnt: r.q5??0,
+    mood: r.q6??5, mot: r.q7??5, str: r.q8??5, rec: r.q9??5, sri: r.q10??5,
+    slhr: null, notes: r.notes && r.notes !== 'none' ? r.notes : '',
+    rpe: 0, dur: 0, source: 'paste'
+  };
+}
+
+// ===== MANUAL ENTRY =====
+function msv(k) { document.getElementById('mv-'+k).textContent=document.getElementById('ms-'+k).value; }
+
+async function manualSubmit() {
+  const ath=document.getElementById('m-ath').value.trim();
+  const date=document.getElementById('m-date').value;
+  if (!ath||!date) { toast('Name and date required',true); return; }
+
+  const btn=document.querySelector('.sub-btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+
+  const e={
+    ath,date,
+    sq:+document.getElementById('ms-sq').value,
+    sa:+document.getElementById('ms-sa').value,
+    slhr:+document.getElementById('m-slhr').value||null,
+    fat:+document.getElementById('ms-fat').value,
+    sor:+document.getElementById('ms-sor').value,
+    jnt:+document.getElementById('ms-jnt').value,
+    mood:+document.getElementById('ms-mood').value,
+    mot:+document.getElementById('ms-mot').value,
+    str:+document.getElementById('ms-str').value,
+    rec:+document.getElementById('ms-rec').value,
+    sri:+document.getElementById('ms-sri').value,
+    rpe:+document.getElementById('ms-rpe').value,
+    dur:+document.getElementById('m-dur').value||0,
+    notes:document.getElementById('m-notes').value.trim(),
+    source:'manual'
+  };
+
+  const ok=await saveEntry(e);
+  btn.textContent='Save Entry →'; btn.disabled=false;
+
+  if (ok) {
+    await loadEntries();
+    renderRoster();
+    updateDatalist();
+    toast('Saved: '+ath+' · '+date);
+  }
+}
+
+function updateDatalist() {
+  const names=[...new Set(entries.map(e=>e.ath))];
+  document.getElementById('ath-dl').innerHTML=names.map(n=>`<option value="${n}">`).join('');
+}
+
+// ===== TOAST =====
+function toast(msg,isError=false) {
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast show'+(isError?' error':'');
+  setTimeout(()=>{el.className='toast';},3000);
+}
+
+// ===== BOOT =====
+window.addEventListener('load', async () => {
+  document.getElementById('roster-date').textContent='AS OF '+new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+
+  // Check for existing Supabase session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    loginSuccess(session.user);
+  }
+
+  // Listen for auth changes
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('app').classList.remove('visible');
+    }
+  });
+});
+</script>
+<!-- UPDATE BANNER -->
+<div id="update-banner">
+  <span>🔄 New version available — tap to update</span>
+  <button onclick="updateApp()">Update Now</button>
+</div>
+
+<script>
+// SERVICE WORKER REGISTRATION
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version available — show banner
+            document.getElementById('update-banner').classList.add('show');
+          }
+        });
+      });
+
+      // Check for updates every 30 minutes
+      setInterval(() => reg.update(), 30 * 60 * 1000);
+
+    } catch(e) { console.log('SW registration failed:', e); }
+  });
+
+  // When new SW takes over — reload
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
+  });
+}
+
+function updateApp() {
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (reg && reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload(true);
+    }
+  });
+}
+</script>
+</body>
+</html>
