@@ -241,6 +241,28 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;hei
   .roster-stats{grid-template-columns:repeat(2,1fr)}
   .page{padding:20px 16px 60px}
 }
+
+/* ── PILLAR TREND MODAL ── */
+.pillar-modal-overlay{position:fixed;inset:0;background:rgba(7,9,12,0.92);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.pillar-modal-overlay.open{display:flex;animation:fadeIn .2s ease}
+.pillar-modal{background:var(--bg2);border:1px solid var(--border2);width:100%;max-width:680px;max-height:88vh;overflow-y:auto;padding:24px}
+.pm-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.pm-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;letter-spacing:1px;line-height:1}
+.pm-sub{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-top:4px}
+.pm-close{background:none;border:1px solid var(--border2);color:var(--text2);width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.pm-close:hover{border-color:var(--accent);color:var(--accent)}
+.pm-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.pm-stat{background:var(--bg3);border:1px solid var(--border);padding:12px 14px}
+.pm-stat-label{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.pm-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;line-height:1}
+.chart-wrap{background:var(--bg3);border:1px solid var(--border);padding:16px;margin-bottom:16px}
+.chart-slabel{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.pm-entries{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.pm-entry{display:grid;grid-template-columns:90px 1fr 40px;gap:12px;align-items:center;padding:8px 12px;background:var(--bg3);border:1px solid var(--border)}
+.pm-entry-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:1px}
+.pm-entry-bar-wrap{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
+.pm-entry-bar{height:100%;border-radius:2px;transition:width .4s ease}
+.pm-entry-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-align:right}
 </style>
 </head>
 <body>
@@ -406,27 +428,27 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;hei
 
         <!-- PDF UPLOAD -->
         <div id="input-pdf">
-          <div class="slabel">// Batch PDF Upload (Everfit Exports)</div>
+          <div class="slabel">// Batch PDF Upload</div>
           <div class="upload-zone" id="drop-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)">
             <input type="file" accept=".pdf" multiple onchange="handleFiles(this.files)" id="pdf-input">
             <div class="uz-icon">⬆</div>
             <div class="uz-title">Drop PDFs Here</div>
-            <div class="uz-sub">Drag & drop multiple Everfit PDF exports<br>or click to browse files</div>
+            <div class="uz-sub">Drag & drop multiple daily fatigue tracker PDFs<br>or click to browse files</div>
             <div class="uz-badge">AI-powered visual parser — reads filled boxes accurately</div>
           </div>
           <div class="parse-queue" id="parse-queue"></div>
           <button class="process-btn" id="process-btn" onclick="processQueue()" disabled>Process PDFs →</button>
           <div class="rn" style="margin-top:16px">
             <div class="rn-lbl">How it works</div>
-            <div class="rn-txt">Upload one or many PDFs. Claude AI reads the filled boxes visually — accurate even when Everfit's text encoding is garbled. Batch process multiple athletes at once.</div>
+            <div class="rn-txt">Upload one or many PDFs. Claude AI reads the filled boxes visually — accurate regardless of PDF encoding. Batch process multiple athletes at once.</div>
           </div>
         </div>
 
         <!-- PASTE TEXT -->
         <div id="input-paste" style="display:none">
-          <div class="slabel">// Paste Everfit Export Text</div>
+          <div class="slabel">// Paste Form Response Text</div>
           <div class="manual-card" style="padding:20px">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">How to get this: In Everfit, open the athlete's form response → tap the three dots → Copy or Share as text → paste below</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:8px">Open the athlete's form response → copy all text → paste below</div>
             <div class="fg">
               <label>Athlete Name (override if needed)</label>
               <input type="text" id="paste-ath" placeholder="Auto-detected from text">
@@ -442,7 +464,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;hei
             <button class="process-btn" onclick="processPaste()" style="margin-top:8px">Parse & Save →</button>
             <div class="rn" style="margin-top:12px">
               <div class="rn-lbl">Paste format</div>
-              <div class="rn-txt">Works with any Everfit text export. The parser finds the athlete name, date, and all 10 question scores automatically. Questions not answered default to neutral (5).</div>
+              <div class="rn-txt">Works with any daily fatigue tracker text export. The parser finds the athlete name, date, and all 10 question scores automatically. Questions not answered default to neutral (5).</div>
             </div>
           </div>
         </div>
@@ -486,6 +508,26 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;hei
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- PILLAR TREND MODAL -->
+<div class="pillar-modal-overlay" id="pillar-modal-overlay" onclick="closePillarModal(event)">
+  <div class="pillar-modal">
+    <div class="pm-header">
+      <div>
+        <div class="pm-title" id="pm-title">—</div>
+        <div class="pm-sub" id="pm-sub">—</div>
+      </div>
+      <button class="pm-close" onclick="closePillarModal()">✕</button>
+    </div>
+    <div class="pm-stats" id="pm-stats"></div>
+    <div class="chart-wrap">
+      <div class="chart-slabel">// 30-Day Trend</div>
+      <canvas id="pillar-chart" height="160"></canvas>
+    </div>
+    <div class="slabel" style="margin-bottom:10px">// Entry Log</div>
+    <div class="pm-entries" id="pm-entries"></div>
   </div>
 </div>
 
@@ -788,11 +830,12 @@ function selectAth(name) {
   ];
   document.getElementById('dp-pillars').innerHTML=pillarDefs.map(p=>{
     const v=s[p.key],c=pColor(v),st=v>=7.5?'Optimal':v>=5.5?'Moderate':'Impaired';
-    return `<div class="pc" style="border-top-color:${p.bc}">
+    return `<div class="pc" style="border-top-color:${p.bc};cursor:pointer" onclick="openPillarModal('${e.ath}','${p.key}','${p.label}','${p.bc}')">
       <div class="pc-lbl">${p.label}</div>
       <div class="pc-val" style="color:${c.c}">${v.toFixed(1)}</div>
       <div class="pc-st" style="color:${c.c}">${st}</div>
       <div class="pc-bar"><div class="pc-fill" style="width:${v*10}%;background:${c.c}"></div></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text3);margin-top:6px;letter-spacing:1px">TAP FOR TREND →</div>
     </div>`;
   }).join('');
 
@@ -1122,6 +1165,194 @@ async function manualSubmit() {
 function updateDatalist() {
   const names=[...new Set(entries.map(e=>e.ath))];
   document.getElementById('ath-dl').innerHTML=names.map(n=>`<option value="${n}">`).join('');
+}
+
+// ===== PILLAR TREND MODAL =====
+let pillarChartInstance = null;
+
+function openPillarModal(athName, pillarKey, pillarLabel, accentColor) {
+  // Get all entries for this athlete sorted by date
+  const athEntries = entries
+    .filter(e => e.ath === athName)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  if (!athEntries.length) { toast('No data for this athlete', true); return; }
+
+  // Compute pillar score per entry
+  const scored = athEntries.map(e => {
+    const s = score(e);
+    return { date: e.date, val: s[pillarKey] };
+  });
+
+  // Stats
+  const vals = scored.map(s => s.val);
+  const avg = (vals.reduce((a,b) => a+b, 0) / vals.length);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const latest = vals[vals.length - 1];
+  const c = pColor(latest);
+
+  // Set header
+  document.getElementById('pm-title').textContent = pillarLabel;
+  document.getElementById('pm-sub').textContent = athName.toUpperCase() + '  ·  ' + scored.length + ' ENTRIES';
+
+  // Stats cards
+  document.getElementById('pm-stats').innerHTML = `
+    <div class="pm-stat">
+      <div class="pm-stat-label">Latest</div>
+      <div class="pm-stat-val" style="color:${c.c}">${latest.toFixed(1)}</div>
+    </div>
+    <div class="pm-stat">
+      <div class="pm-stat-label">7-Day Avg</div>
+      <div class="pm-stat-val" style="color:var(--text)">${avg.toFixed(1)}</div>
+    </div>
+    <div class="pm-stat">
+      <div class="pm-stat-label">Range</div>
+      <div class="pm-stat-val" style="color:var(--text2);font-size:16px">${min.toFixed(1)} – ${max.toFixed(1)}</div>
+    </div>
+  `;
+
+  // Draw chart
+  const last30 = scored.slice(-30);
+  drawPillarChart(last30, accentColor);
+
+  // Entry log
+  const reversed = [...scored].reverse().slice(0, 20);
+  document.getElementById('pm-entries').innerHTML = reversed.map(s => {
+    const ec = pColor(s.val);
+    return `<div class="pm-entry">
+      <div class="pm-entry-date">${s.date}</div>
+      <div class="pm-entry-bar-wrap"><div class="pm-entry-bar" style="width:${s.val*10}%;background:${ec.c}"></div></div>
+      <div class="pm-entry-val" style="color:${ec.c}">${s.val.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('pillar-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function drawPillarChart(data, accentColor) {
+  const canvas = document.getElementById('pillar-chart');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas size
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width - 32;
+  canvas.width = w * dpr;
+  canvas.height = 160 * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = '160px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 16, right: 16, bottom: 28, left: 32 };
+  const chartW = w - pad.left - pad.right;
+  const chartH = 160 - pad.top - pad.bottom;
+
+  // Background
+  ctx.fillStyle = '#131920';
+  ctx.fillRect(0, 0, w, 160);
+
+  if (!data.length) return;
+
+  const vals = data.map(d => d.val);
+  const minV = 0, maxV = 10;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e2a38';
+  ctx.lineWidth = 0.5;
+  [0, 2.5, 5, 7.5, 10].forEach(v => {
+    const y = pad.top + chartH - ((v - minV) / (maxV - minV)) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(pad.left + chartW, y);
+    ctx.stroke();
+    ctx.fillStyle = '#304050';
+    ctx.font = '8px JetBrains Mono, monospace';
+    ctx.fillText(v, 2, y + 3);
+  });
+
+  // Zone fill — optimal zone 7.5-10 subtle green
+  const y75 = pad.top + chartH - (7.5 / 10) * chartH;
+  ctx.fillStyle = 'rgba(10,240,160,0.04)';
+  ctx.fillRect(pad.left, y75, chartW, chartH - (y75 - pad.top));
+
+  if (data.length < 2) {
+    // Single point
+    const x = pad.left + chartW / 2;
+    const y = pad.top + chartH - ((vals[0] - minV) / (maxV - minV)) * chartH;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = accentColor.replace('var(--', '').replace(')', '');
+    ctx.fill();
+    return;
+  }
+
+  const stepX = chartW / (data.length - 1);
+
+  // Area fill
+  const color = accentColor.includes('var') ?
+    getComputedStyle(document.documentElement).getPropertyValue(accentColor.replace('var(', '').replace(')', '').trim()).trim() || '#0af0a0'
+    : accentColor;
+
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = pad.left + i * stepX;
+    const y = pad.top + chartH - ((d.val - minV) / (maxV - minV)) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  // Close area to bottom
+  ctx.lineTo(pad.left + (data.length - 1) * stepX, pad.top + chartH);
+  ctx.lineTo(pad.left, pad.top + chartH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
+  grad.addColorStop(0, color + '40');
+  grad.addColorStop(1, color + '05');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  data.forEach((d, i) => {
+    const x = pad.left + i * stepX;
+    const y = pad.top + chartH - ((d.val - minV) / (maxV - minV)) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Dots
+  data.forEach((d, i) => {
+    const x = pad.left + i * stepX;
+    const y = pad.top + chartH - ((d.val - minV) / (maxV - minV)) * chartH;
+    const dc = pColor(d.val);
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = dc.c;
+    ctx.fill();
+  });
+
+  // X-axis date labels — show first, middle, last
+  ctx.fillStyle = '#304050';
+  ctx.font = '8px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  const labelIdxs = [0, Math.floor((data.length-1)/2), data.length-1];
+  labelIdxs.forEach(i => {
+    if (i < data.length) {
+      const x = pad.left + i * stepX;
+      const d = data[i].date.substring(5); // MM-DD
+      ctx.fillText(d, x, pad.top + chartH + 16);
+    }
+  });
+}
+
+function closePillarModal(e) {
+  if (e && e.target !== document.getElementById('pillar-modal-overlay')) return;
+  document.getElementById('pillar-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ===== TOAST =====
